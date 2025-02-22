@@ -1,0 +1,53 @@
+name: Convert CSV to Images
+
+on:
+  workflow_dispatch:
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Requirements
+      run: pip install pandas pillow
+
+    - name: Convert CSV to Images
+      run: |
+        python -c "
+        import pandas as pd
+        from PIL import Image, ImageDraw, ImageFont
+        import os
+
+        df = pd.read_csv('collections-25-02-19-19_41_35.csv')
+
+        output_folder = 'output_images'
+        os.makedirs(output_folder, exist_ok=True)
+
+        for i, row in df.iterrows():
+            image = Image.new('RGB', (1000, 600), color='white')
+            draw = ImageDraw.Draw(image)
+            font = ImageFont.load_default()
+
+            text = f\"Image {i+1}\\n\"
+            for col, value in row.items():
+                text += f\"{col}: {value}\\n\"
+
+            draw.text((10, 10), text, fill='black', font=font)
+            image.save(f'{output_folder}/image_{i+1}.png')
+
+        print(f'Η μετατροπή ολοκληρώθηκε. Εικόνες αποθηκεύτηκαν στον φάκελο {output_folder}.')
+        "
+
+    - name: Upload Images
+      uses: actions/upload-artifact@v4
+      with:
+        name: converted-images
+        path: output_images/
